@@ -1,1 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Memory Prompt Generator</title>
+  <style>
+    :root{
+      --navy:#06295A;
+      --navy-dark:#021C42;
+      --teal:#009E8E;
+      --blue:#0B67D1;
+      --bg:#f4f8fb;
+      --card:#ffffff;
+      --line:#bfd1df;
+      --text:#0e1d36;
+      --muted:#526272;
+      --pale-teal:#eaf8f6;
+      --pale-blue:#eff6ff;
+      --danger:#9f1239;
+      --shadow:0 14px 36px rgba(2,28,66,.08);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.5;
+    }
+    header{
+      background:linear-gradient(180deg,var(--navy),var(--navy-dark));
+      color:#fff;
+      padding:36px 20px 30px;
+      text-align:center;
+    }
+    header h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px);line-height:1.08;letter-spacing:-.02em}
+    header p{margin:0;font-size:clamp(15px,2vw,18px);opacity:.92}
+    main{max-width:1180px;margin:0 auto;padding:24px 18px 48px}
+    .top-note{
+      background:var(--pale-blue);
+      border:1px solid var(--line);
+      border-left:8px solid var(--teal);
+      border-radius:var(--radius);
+      padding:18px 20px;
+      margin:0 0 22px;
+      box-shadow:var(--shadow);
+    }
+    .top-note strong{color:var(--navy-dark)}
+    .defs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 22px}
+    .def-card,.section,.output-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .def-card{padding:18px}
+    .def-card h2{font-size:18px;margin:0 0 8px;color:var(--navy-dark)}
+    .def-card p{margin:0;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.85fr);gap:18px;align-items:start}
+    .section{margin-bottom:16px;overflow:hidden}
+    .section-title{
+      display:flex;align-items:center;gap:10px;
+      background:#fff;
+      border-bottom:1px solid var(--line);
+      padding:15px 18px;
+    }
+    .badge{
+      width:30px;height:30px;border-radius:999px;background:var(--teal);color:#fff;
+      display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:0 0 auto;
+    }
+    .section h2{font-size:19px;margin:0;color:var(--navy-dark)}
+    .fields{display:grid;gap:14px;padding:18px}
+    .two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    label{display:grid;gap:6px;font-weight:700;font-size:13px;color:var(--navy-dark)}
+    input,textarea,select{
+      width:100%;border:1px solid #bac9d8;border-radius:11px;background:#fff;
+      padding:11px 12px;font:inherit;color:var(--text);font-size:15px;
+    }
+    textarea{min-height:90px;resize:vertical}
+    input:focus,textarea:focus,select:focus{outline:3px solid rgba(0,158,142,.18);border-color:var(--teal)}
+    .check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .check{
+      display:flex;gap:9px;align-items:flex-start;border:1px solid #d6e1eb;border-radius:12px;padding:10px;background:#f8fafc;
+      font-weight:600;color:var(--text);font-size:13px;
+    }
+    .check input{width:auto;margin-top:3px;accent-color:var(--teal)}
+    .hint{font-size:12px;color:var(--muted);font-weight:400;margin-top:-2px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 0}
+    button{
+      border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;font-size:15px;
+    }
+    .primary{background:linear-gradient(180deg,var(--teal),#057d74);color:#fff;box-shadow:0 10px 22px rgba(0,158,142,.22)}
+    .secondary{background:#fff;color:var(--navy-dark);border:1px solid var(--line)}
+    .danger{background:#fff;color:var(--danger);border:1px solid #fecdd3}
+    .output-card{position:sticky;top:16px;overflow:hidden}
+    .output-head{background:var(--navy);color:#fff;padding:16px 18px}
+    .output-head h2{margin:0 0 3px;font-size:20px}
+    .output-head p{margin:0;font-size:13px;opacity:.88}
+    #promptOutput{min-height:720px;border:0;border-radius:0;font-family:Consolas, Menlo, Monaco, monospace;font-size:13px;line-height:1.45;background:#0b1220;color:#e8eef8;padding:18px;white-space:pre-wrap}
+    .output-actions{display:flex;gap:10px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--line);background:#fff}
+    .small-note{font-size:12.5px;color:var(--muted);padding:0 18px 16px}
+    footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+    .status{font-size:13px;color:var(--teal);font-weight:700;min-height:18px}
+    @media (max-width:900px){.grid,.defs{grid-template-columns:1fr}.output-card{position:static}.two{grid-template-columns:1fr}.check-grid{grid-template-columns:1fr}#promptOutput{min-height:520px}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Agent Memory Prompt Generator</h1>
+    <p>Generate a professional prompt for analyzing the right memory design for an AI agent.</p>
+  </header>
+
+  <main>
+    <div class="top-note">
+      <strong>Important:</strong> This page does not choose the memory design for you. It collects the agent details and generates a prompt you can run in your own LLM. The generated prompt asks for a storage-neutral analysis, including hybrid options, risks, and mismatches.
+    </div>
+
+    <div class="defs">
+      <div class="def-card">
+        <h2>Agent memory</h2>
+        <p>The information an agent can use before, during, or after a task: documents, records, preferences, previous decisions, temporary notes, or audit logs.</p>
+      </div>
+      <div class="def-card">
+        <h2>Memory shape</h2>
+        <p>The form in which information is prepared for the agent: text chunks, document sections, tables, graph links, profile facts, working state, context bundles, or audit logs.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <form id="memoryForm" autocomplete="off">
+        <section class="section">
+          <div class="section-title"><span class="badge">1</span><h2>Agent basics</h2></div>
+          <div class="fields two">
+            <label>Agent name<input name="agentName" placeholder="Example: Customer refund assistant" /></label>
+            <label>Agent role<input name="agentRole" placeholder="Example: Drafts refund decisions for support reps" /></label>
+            <label>Who will use the agent?<input name="agentUsers" placeholder="Example: support reps, analysts, teachers, managers" /></label>
+            <label>Business problem it solves<input name="businessProblem" placeholder="Example: reduce repeated manual policy checks" /></label>
+            <label class="wide">Expected output<textarea name="expectedOutput" placeholder="Example: a draft response, recommendation, checklist, report, ticket update, or structured JSON output"></textarea></label>
+            <label>How important is correctness?<select name="correctnessLevel"><option value="Not specified">Select</option><option>Low - informational only</option><option>Medium - supports human decisions</option><option>High - affects customers, money, operations, or compliance</option></select></label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span class="badge">2</span><h2>Task definition</h2></div>
+          <div class="fields">
+            <label>Describe the task the agent must perform<textarea name="taskDescription" placeholder="Be specific. What should the agent do from start to finish?"></textarea></label>
+            <div class="fields two" style="padding:0">
+              <label>In scope<textarea name="inScope" placeholder="What the agent is allowed to handle"></textarea></label>
+              <label>Out of scope<textarea name="outScope" placeholder="What the agent must not handle"></textarea></label>
+            </div>
+            <label>What should the agent never do?<textarea name="neverDo" placeholder="Example: approve refunds directly, invent policy rules, expose private data, act without human review"></textarea></label>
+            <label>What does a successful result look like?<textarea name="successCriteria" placeholder="Example: cites the right source, follows policy, asks for missing data, outputs a clear draft"></textarea></label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span class="badge">3</span><h2>Information the agent may need</h2></div>
+          <div class="fields">
+            <p class="hint">Select information signals only. The form will not convert these into a final memory recommendation.</p>
+            <div class="check-grid" data-group="infoSignals">
+              <label class="check"><input type="checkbox" value="Short text, FAQs, notes, help content" />Short text / FAQs / notes</label>
+              <label class="check"><input type="checkbox" value="Long documents, PDFs, policies, contracts, manuals" />Long documents / PDFs / policies</label>
+              <label class="check"><input type="checkbox" value="Tables, records, metrics, CRM, ERP, operational data" />Tables / records / metrics</label>
+              <label class="check"><input type="checkbox" value="Relationships between people, systems, documents, events, or dependencies" />Relationships / dependencies</label>
+              <label class="check"><input type="checkbox" value="User preferences, project facts, recurring settings" />User or project preferences</label>
+              <label class="check"><input type="checkbox" value="Previous task results or prior agent runs" />Previous task results</label>
+              <label class="check"><input type="checkbox" value="Temporary task progress, current state, open questions" />Temporary task progress</label>
+              <label class="check"><input type="checkbox" value="External tools, APIs, databases, files, or workflows" />External tools / APIs</label>
+              <label class="check"><input type="checkbox" value="Human approval, escalation, or review before final action" />Human approval / review</label>
+              <label class="check"><input type="checkbox" value="Audit trail of inputs, sources, outputs, errors, and approvals" />Audit trail / logging</label>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span class="badge">4</span><h2>Source and reliability rules</h2></div>
+          <div class="fields two">
+            <label>Most trusted sources<textarea name="trustedSources" placeholder="Which source is authoritative? Example: policy database, signed contract, governed table, approved SOP"></textarea></label>
+            <label>Potentially unreliable sources<textarea name="unreliableSources" placeholder="Example: old documents, user notes, previous draft outputs, unapproved spreadsheets"></textarea></label>
+            <label>Freshness requirement<textarea name="freshness" placeholder="Example: real-time, daily, monthly, latest approved version, not critical"></textarea></label>
+            <label>Permission / access rules<textarea name="permissions" placeholder="Example: role-based access, customer data limits, document sensitivity, department ownership"></textarea></label>
+            <label>Missing-data behavior<textarea name="missingData" placeholder="What should the agent do if required information is missing?"></textarea></label>
+            <label>What must not be stored?<textarea name="doNotStore" placeholder="Example: raw PII, private messages, inferred facts, sensitive documents, passwords"></textarea></label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><span class="badge">5</span><h2>Risk and controls</h2></div>
+          <div class="fields">
+            <div class="check-grid" data-group="riskSignals">
+              <label class="check"><input type="checkbox" value="A wrong answer could affect money or financial decisions" />Money / finance impact</label>
+              <label class="check"><input type="checkbox" value="A wrong answer could affect customers or users" />Customer impact</label>
+              <label class="check"><input type="checkbox" value="A wrong answer could create legal, compliance, or policy risk" />Legal / compliance risk</label>
+              <label class="check"><input type="checkbox" value="A wrong answer could damage business operations" />Operational risk</label>
+              <label class="check"><input type="checkbox" value="The agent may handle sensitive, private, or regulated information" />Sensitive data</label>
+              <label class="check"><input type="checkbox" value="The agent must ask for human approval before final action" />Human approval required</label>
+            </div>
+            <label>What should be logged?<textarea name="loggingNeeds" placeholder="Example: user request, sources used, missing data, final output, human approval, error reason"></textarea></label>
+            <label>What tests would prove this agent works?<textarea name="testCases" placeholder="Example: normal case, missing source, conflicting source, no permission, stale document, out-of-scope request"></textarea></label>
+            <div class="actions">
+              <button class="primary" type="button" id="generateBtn">Generate Prompt</button>
+              <button class="secondary" type="button" id="copyBtn">Copy Prompt</button>
+              <button class="secondary" type="button" id="downloadBtn">Download .txt</button>
+              <button class="danger" type="reset">Clear Form</button>
+            </div>
+            <div class="status" id="status" aria-live="polite"></div>
+          </div>
+        </section>
+      </form>
+
+      <aside class="output-card">
+        <div class="output-head">
+          <h2>Generated prompt</h2>
+          <p>Copy this into your LLM. Review the answer before choosing any storage tool.</p>
+        </div>
+        <textarea id="promptOutput" spellcheck="false"></textarea>
+        <div class="output-actions">
+          <button class="primary" type="button" id="copyBtn2">Copy Prompt</button>
+          <button class="secondary" type="button" id="selectBtn">Select All</button>
+        </div>
+        <p class="small-note">The prompt deliberately avoids vendor names and asks for storage-neutral memory design first.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer>Agent Memory Prompt Generator - Designed and prepared by Avishai Niazov with the help of AI</footer>
+
+<script>
+(function(){
+  const form = document.getElementById('memoryForm');
+  const output = document.getElementById('promptOutput');
+  const status = document.getElementById('status');
+
+  function val(name){
+    const el = form.elements[name];
+    return el ? String(el.value || '').trim() : '';
+  }
+
+  function checked(group){
+    return Array.from(document.querySelectorAll('[data-group="' + group + '"] input:checked')).map(x => x.value);
+  }
+
+  function list(items){
+    return items.length ? items.map(x => '- ' + x).join('\n') : '- Not specified';
+  }
+
+  function field(label, value){
+    return label + ': ' + (value && value.trim() ? value.trim() : 'Not specified');
+  }
+
+  function buildPrompt(){
+    const info = checked('infoSignals');
+    const risks = checked('riskSignals');
+
+    return `You are an AI agent architect.
+
+Your job is to analyze the agent described below and recommend a practical memory design.
+
+Important rules:
+- Do not recommend vendors, databases, or storage products yet.
+- Do not assume one memory type is enough.
+- Consider whether the agent needs a hybrid memory design.
+- Identify mismatches: cases where a memory type may look useful but is not enough for the task.
+- Separate confirmed facts from inferred facts.
+- Separate temporary working state from durable memory.
+- Make source authority, freshness, permissions, and audit needs explicit.
+- Keep the recommendation storage-neutral and implementation-ready.
+
+Definitions to use in your analysis:
+- Agent memory = information an agent can use before, during, or after a task.
+- Memory shape = the form in which information is prepared for the agent, such as text chunks, document sections, tables, graph relationships, profile facts, temporary working state, context bundles, or audit logs.
+
+AGENT BASICS
+${field('Agent name', val('agentName'))}
+${field('Agent role', val('agentRole'))}
+${field('Users', val('agentUsers'))}
+${field('Business problem', val('businessProblem'))}
+${field('Expected output', val('expectedOutput'))}
+${field('Correctness importance', val('correctnessLevel'))}
+
+TASK DEFINITION
+${field('Task description', val('taskDescription'))}
+${field('In scope', val('inScope'))}
+${field('Out of scope', val('outScope'))}
+${field('Must never do', val('neverDo'))}
+${field('Success criteria', val('successCriteria'))}
+
+INFORMATION SIGNALS SELECTED BY THE USER
+${list(info)}
+
+SOURCE AND RELIABILITY RULES
+${field('Most trusted sources', val('trustedSources'))}
+${field('Potentially unreliable sources', val('unreliableSources'))}
+${field('Freshness requirement', val('freshness'))}
+${field('Permission / access rules', val('permissions'))}
+${field('Missing-data behavior', val('missingData'))}
+${field('What must not be stored', val('doNotStore'))}
+
+RISK SIGNALS SELECTED BY THE USER
+${list(risks)}
+
+CONTROL NEEDS
+${field('What should be logged', val('loggingNeeds'))}
+${field('Tests that would prove the agent works', val('testCases'))}
+
+ANALYSIS TASK
+Analyze this agent and return a practical memory design.
+
+Your output must include:
+
+1. Agent task summary
+- Summarize what the agent must do.
+- Identify the main action or output it supports.
+
+2. Required information before action
+- List the exact information the agent must receive before it can act reliably.
+- Mark each item as required, optional, or only useful for review.
+
+3. Memory types to evaluate
+Evaluate the following memory types where relevant:
+- Text retrieval memory
+- Document-structure memory
+- Table memory
+- Business-context memory
+- Graph memory
+- Profile memory
+- Working memory
+- Context bundle
+- Audit memory
+
+For each relevant type, explain:
+- Why it may be needed
+- What it should store
+- What it should not store
+- What risk it reduces
+- What risk it introduces
+
+4. Hybrid memory design
+- If more than one memory type is needed, propose the smallest practical hybrid design.
+- Explain how the memory types should work together.
+- Explain which memory should be primary and which should be supporting.
+
+5. Potential mismatches
+- List memory types that may look attractive but are not sufficient by themselves.
+- Explain why they could fail for this specific agent.
+
+6. Source authority and freshness rules
+- Define which source wins if sources conflict.
+- Define how fresh each source must be.
+- Define what the agent should do when data is stale or missing.
+
+7. Permission and privacy rules
+- Define what the agent may access.
+- Define what it must not store.
+- Define what should be temporary only.
+- Define what must require human approval.
+
+8. Failure modes
+List likely memory-related failures, including:
+- stale context
+- wrong source
+- missing permission
+- over-retrieval
+- missing document structure
+- inferred memory treated as confirmed fact
+- missing relationship data
+- missing audit trail
+
+9. Test cases
+Provide at least five test cases:
+- normal case
+- missing data case
+- conflicting source case
+- stale source case
+- out-of-scope request
+- permission denied case, if relevant
+
+10. Final storage-neutral recommendation
+- Give a clear recommendation for the memory design.
+- Do not name vendors.
+- Do not choose a database yet.
+- End with the exact questions that must be answered before selecting storage tools.`;
+  }
+
+  function generate(){
+    output.value = buildPrompt();
+    status.textContent = 'Prompt generated.';
+    setTimeout(()=>status.textContent='',2500);
+  }
+
+  async function copy(){
+    if(!output.value.trim()) generate();
+    try{
+      await navigator.clipboard.writeText(output.value);
+      status.textContent = 'Prompt copied.';
+    }catch(e){
+      output.focus(); output.select();
+      document.execCommand('copy');
+      status.textContent = 'Prompt selected/copied.';
+    }
+    setTimeout(()=>status.textContent='',2500);
+  }
+
+  function download(){
+    if(!output.value.trim()) generate();
+    const blob = new Blob([output.value], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'agent-memory-analysis-prompt.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', generate);
+  document.getElementById('copyBtn').addEventListener('click', copy);
+  document.getElementById('copyBtn2').addEventListener('click', copy);
+  document.getElementById('downloadBtn').addEventListener('click', download);
+  document.getElementById('selectBtn').addEventListener('click', function(){ output.focus(); output.select(); });
+  form.addEventListener('reset', function(){ setTimeout(()=>{ output.value=''; status.textContent=''; }, 0); });
+  generate();
+})();
+</script>
+</body>
+</html>
 
